@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isMember(farmId) {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/farms/$(farmId)/members/$(request.auth.uid));
+    }
+    match /farms/{farmId}/animals/{animalId}/{fileName} {
+      allow read: if isMember(farmId);
+      allow write: if isMember(farmId) &&
+        request.resource.size < 8 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+  }
+}

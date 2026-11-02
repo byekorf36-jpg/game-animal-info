@@ -1,0 +1,17 @@
+{
+  "name": "game-animal-records",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Shared animal records for game animals, bulls and rams",
+  "scripts": {
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}

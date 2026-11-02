@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isMember(farmId) {
+      return signedIn() && exists(/databases/$(database)/documents/farms/$(farmId)/members/$(request.auth.uid));
+    }
+    function isOwner(farmId) {
+      return signedIn() && get(/databases/$(database)/documents/farms/$(farmId)).data.ownerUid == request.auth.uid;
+    }
+    match /farms/{farmId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow read: if isMember(farmId);
+      allow update, delete: if isOwner(farmId);
+      match /invites/{inviteId} {
+        allow read: if isOwner(farmId);
+        allow create, update, delete: if isOwner(farmId);
+      }
+      match /members/{uid} {
+        allow read: if isMember(farmId);
+        allow create: if signedIn() && uid == request.auth.uid &&
+          request.resource.data.role == 'editor' &&
+          request.resource.data.keys().hasAll(['role','inviteCode','joinedAt']) &&
+          get(/databases/$(database)/documents/farms/$(farmId)/invites/main).data.code == request.resource.data.inviteCode;
+        allow create: if signedIn() && uid == request.auth.uid &&
+          request.resource.data.role == 'owner' && isOwner(farmId);
+        allow update, delete: if isOwner(farmId);
+      }
+      match /animals/{animalId} {
+        // Owner and every invited editor can create, read, update and delete records.
+        allow read, create, update, delete: if isMember(farmId);
+      }
+    }
+  }
+}
