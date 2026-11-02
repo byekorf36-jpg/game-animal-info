@@ -1,1 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game Animal Records</title>
+<meta name="theme-color" content="#27452e">
+<meta name="description" content="Shared animal profiles, genetics, breeding and measurement records for game animals, bulls and rams.">
+<style>
+:root{--green:#27452e;--gold:#b38a45;--cream:#f4f0e7;--ink:#292a25;--line:#ded8cc}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+header{background:var(--green);color:#fff;padding:22px 18px}.wrap{max-width:1150px;margin:auto}
+header h1{margin:0;font-size:28px}header p{margin:6px 0 0;opacity:.82}
+nav{display:flex;gap:8px;flex-wrap:wrap;padding:14px 0}button{border:0;border-radius:9px;padding:11px 15px;background:var(--gold);color:#fff;font-weight:700;cursor:pointer}button.alt{background:#ded8ca;color:var(--ink)}button.red{background:#9b4438}
+section.hidden{display:none}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 10px #00000012;margin-bottom:15px}
+h2,h3{margin-top:0}.muted{color:#777}.stat{font-size:29px;font-weight:700}
+.badge{display:inline-block;padding:5px 9px;border-radius:20px;background:#ece7dc;font-size:12px;margin:2px}
+label{display:block;font-size:12px;font-weight:700;margin-top:8px}input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff;margin-top:5px}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:12px;white-space:nowrap}
+.scroll{overflow:auto}.animal{cursor:pointer}.animal h3{margin-bottom:7px}.empty{padding:25px;text-align:center;color:#777}
+.photo{max-width:100%;border-radius:10px;max-height:300px;object-fit:cover}
+.small{font-size:12px}.section-title{border-bottom:2px solid #eee;padding-bottom:8px;margin-top:22px}
+@media(max-width:650px){.row,.row3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>🐂 Game Animal Records</h1><p>Digital animal profiles • genetics • measurements • breeding • auction records</p></div></header>
+<main class="wrap">
+<section id="authPanel" class="card" style="margin-top:18px">
+  <h2>Farm workspace sign-in</h2>
+  <p class="muted">Sign in to access your shared animal database from any authorised phone.</p>
+  <div class="row">
+    <div><label>Email address</label><input id="authEmail" type="email" autocomplete="username" placeholder="you@example.com"></div>
+    <div><label>Password</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 6 characters"></div>
+  </div>
+  <div class="row">
+    <button onclick="registerAccount()">Create account</button>
+    <button class="alt" onclick="loginAccount()">Sign in</button>
+  </div>
+  <p id="authMessage" class="small muted"></p>
+  <div id="workspacePanel" class="hidden">
+    <hr>
+    <h3>Choose your farm workspace</h3>
+    <label>Farm name (when creating a new workspace)</label><input id="farmName" value="Our Farm">
+    <button onclick="createFarm()">Create new farm workspace</button>
+    <h3 style="margin-top:18px">Join an existing farm</h3>
+    <div class="row"><div><label>Farm ID</label><input id="joinFarmId" placeholder="Ask the farm owner"></div><div><label>Invitation code</label><input id="joinCode" placeholder="Ask the farm owner"></div></div>
+    <button class="alt" onclick="joinFarm()">Join farm</button>
+  </div>
+  <div id="activeWorkspace" class="hidden">
+    <p><b>Connected farm:</b> <span id="activeFarmName"></span></p>
+    <p class="small muted">Invite trusted farm users with the Farm ID and invitation code. Invited users can view, add, edit and delete animal records.</p>
+    <p class="small"><b>Farm ID:</b> <span id="shareFarmId"></span></p>
+    <p class="small"><b>Invitation code:</b> <span id="shareJoinCode"></span></p>
+    <button class="alt" onclick="copyInvite()">Copy invitation details</button>
+    <button class="alt" onclick="logoutAccount()">Sign out</button>
+  </div>
+</section>
 
+<div id="appArea" class="hidden">
+<nav>
+<button onclick="show('dashboard')">Dashboard</button>
+<button onclick="show('animals')">Animals</button>
+<button onclick="show('add')">＋ Add Animal</button>
+</nav>
+
+<section id="dashboard">
+<div class="card"><h2>Data backup</h2><p class="muted small">Download a copy of your animal records, or restore a previous backup on this device.</p><button onclick="exportBackup()">Download backup</button> <button class="alt" onclick="document.getElementById('backupFile').click()">Restore backup</button><input id="backupFile" type="file" accept="application/json,.json" style="display:none" onchange="importBackup(event)"></div>
+<div class="grid">
+<div class="card"><div class="muted">Total animals</div><div class="stat" id="count">0</div></div>
+<div class="card"><div class="muted">Bulls</div><div class="stat" id="bulls">0</div></div>
+<div class="card"><div class="muted">Rams</div><div class="stat" id="rams">0</div></div>
+</div>
+<div class="card"><h2>What each profile can hold</h2>
+<p>Every animal has its own <b>name</b> and can store identification, genetics, parentage, origin, age, location, auction information, measurements, notes and a photo.</p>
+<p class="muted small">The measurement fields are based on the record sheet you showed me, including RW, curve, inner tip-to-tip, boss L/R, SCI and scrotum.</p>
+</div>
+</section>
+
+<section id="animals" class="hidden">
+<div class="card"><div class="row"><input id="search" placeholder="Search name, tag, microchip, sire or species" oninput="renderAnimals()"><select id="filter" onchange="renderAnimals()"><option value="">All types</option><option>Bull</option><option>Ram</option><option>Other</option></select></div></div>
+<div id="animalList" class="grid"></div>
+</section>
+
+<section id="add" class="hidden">
+<div class="card"><h2>Add a new animal</h2>
+<form onsubmit="addAnimal(event)">
+<h3 class="section-title">Identity</h3>
+<div class="row">
+<div><label>Animal name *</label><input id="name" required placeholder="e.g. Macula"></div>
+<div><label>Animal type *</label><select id="type"><option>Bull</option><option>Ram</option><option>Other</option></select></div>
+</div>
+<div class="row">
+<div><label>Ear tag / animal ID</label><input id="tag"></div>
+<div><label>Microchip</label><input id="microchip"></div>
+</div>
+<div class="row">
+<div><label>Species / breed</label><input id="breed" placeholder="e.g. sable, buffalo, Boer goat"></div>
+<div><label>Lot number</label><input id="lot"></div>
+</div>
+
+<h3 class="section-title">Genetics & parentage</h3>
+<div class="row">
+<div><label>Parentage DNA</label><input id="dna" placeholder="e.g. Only Sire"></div>
+<div><label>Sire</label><input id="sire" placeholder="e.g. 28 5/8 Makuru"></div>
+</div>
+<div class="row">
+<div><label>Dam</label><input id="dam"></div>
+<div><label>Sire origin</label><input id="sireOrigin" placeholder="e.g. Kruger van Zyl"></div>
+</div>
+
+<h3 class="section-title">Age & location</h3>
+<div class="row3">
+<div><label>Date of birth</label><input id="dob" type="date"></div>
+<div><label>Age category</label><input id="ageCategory" placeholder="e.g. Adult"></div>
+<div><label>Age at auction</label><input id="ageAuction" placeholder="e.g. 3y 4m"></div>
+</div>
+<div class="row">
+<div><label>Area</label><input id="area" placeholder="e.g. Rooibokkraal, Limpopo"></div>
+<div><label>Date available</label><input id="available" placeholder="e.g. Immediately"></div>
+</div>
+
+<h3 class="section-title">Auction / sales information</h3>
+<div class="row3">
+<div><label>Auction / event</label><input id="auction"></div>
+<div><label>Asking / reserve price (R)</label><input id="price" type="number" step="0.01"></div>
+<div><label>Status</label><select id="status"><option>Available</option><option>Sold</option><option>Not sold</option><option>Breeding herd</option><option>Retained</option></select></div>
+</div>
+
+<h3 class="section-title">General notes</h3>
+<label>Additional information</label><textarea id="notes" rows="4" placeholder="Anything important about this animal..."></textarea>
+<br><button>Add animal</button>
+</form></div>
+</section>
+
+<section id="profile" class="hidden"><div id="profileContent"></div></section>
+</div>
+</main>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+
+<script>
+let animals=JSON.parse(localStorage.getItem('gar_animals_v2')||'[]'),current=null;
+const $=id=>document.getElementById(id); const save=()=>{localStorage.setItem('gar_animals_v2',JSON.stringify(animals)); if(window.cloudSyncReady) window.syncAnimalsToCloud();};
+function show(id){['dashboard','animals','add','profile'].forEach(x=>$(x).classList.toggle('hidden',x!==id));updateStats();if(id==='animals')renderAnimals()}
+function updateStats(){$('count').textContent=animals.length;$('bulls').textContent=animals.filter(a=>a.type==='Bull').length;$('rams').textContent=animals.filter(a=>a.type==='Ram').length}
+function val(id){return $(id).value.trim()}
+function addAnimal(e){e.preventDefault();let a={
+id:Date.now(),name:val('name'),type:val('type'),tag:val('tag'),microchip:val('microchip'),breed:val('breed'),lot:val('lot'),
+dna:val('dna'),sire:val('sire'),dam:val('dam'),sireOrigin:val('sireOrigin'),dob:val('dob'),ageCategory:val('ageCategory'),
+ageAuction:val('ageAuction'),area:val('area'),available:val('available'),auction:val('auction'),price:val('price'),status:val('status'),
+notes:val('notes'),measurements:[],photos:[]};animals.push(a);save();e.target.reset();openAnimal(a.id)}
+function renderAnimals(){let q=($('search').value||'').toLowerCase(),f=$('filter').value;
+let list=animals.filter(a=>(!f||a.type===f)&&(!q||[a.name,a.tag,a.microchip,a.sire,a.breed,a.lot].join(' ').toLowerCase().includes(q)));
+$('animalList').innerHTML=list.map(a=>`<div class="card animal" onclick="openAnimal(${a.id})"><h3>${esc(a.name)}</h3><span class="badge">${esc(a.type)}</span><span class="badge">Lot ${esc(a.lot||'—')}</span><p>${esc(a.breed||'Species not entered')}</p><p class="muted">${esc(a.sire?'Sire: '+a.sire:'No sire recorded')}</p><p class="small">${esc(a.microchip?'Microchip: '+a.microchip:'')}</p></div>`).join('')||'<div class="card empty">No animals recorded yet. Add your first animal.</div>'}
+function openAnimal(id){current=animals.find(a=>a.id===id);show('profile');renderProfile()}
+function renderProfile(){let a=current;
+$('profileContent').innerHTML=`
+<div class="card"><button class="alt" onclick="show('animals')">← Animals</button>
+<h1 style="margin:18px 0 7px">${esc(a.name)}</h1><span class="badge">${esc(a.type)}</span><span class="badge">Lot ${esc(a.lot||'—')}</span><span class="badge">${esc(a.status||'')}</span>
+<button onclick="toggleEditAnimal()">Edit animal details</button>
+<div id="editAnimalPanel" class="hidden"><h3 class="section-title">Edit animal details</h3><form onsubmit="saveAnimalDetails(event)"><div class="row"><div><label>Name *</label><input id="e_name" required></div><div><label>Type *</label><select id="e_type"><option>Bull</option><option>Ram</option><option>Other</option></select></div></div><div class="row"><div><label>Ear tag / animal ID</label><input id="e_tag"></div><div><label>Microchip</label><input id="e_microchip"></div></div><div class="row"><div><label>Species / breed</label><input id="e_breed"></div><div><label>Lot number</label><input id="e_lot"></div></div><div class="row"><div><label>Parentage DNA</label><input id="e_dna"></div><div><label>Sire</label><input id="e_sire"></div></div><div class="row"><div><label>Dam</label><input id="e_dam"></div><div><label>Sire origin</label><input id="e_sireOrigin"></div></div><div class="row3"><div><label>Date of birth</label><input id="e_dob" type="date"></div><div><label>Age category</label><input id="e_ageCategory"></div><div><label>Age at auction</label><input id="e_ageAuction"></div></div><div class="row"><div><label>Area</label><input id="e_area"></div><div><label>Date available</label><input id="e_available"></div></div><div class="row3"><div><label>Auction / event</label><input id="e_auction"></div><div><label>Price (R)</label><input id="e_price" type="number" step="0.01"></div><div><label>Status</label><select id="e_status"><option>Available</option><option>Sold</option><option>Not sold</option><option>Breeding herd</option><option>Retained</option></select></div></div><label>Additional information</label><textarea id="e_notes" rows="3"></textarea><button>Save changes</button> <button type="button" class="alt" onclick="toggleEditAnimal(false)">Cancel</button></form></div>
+<h3 class="section-title">Information</h3><div class="grid">
+<div><b>Microchip:</b> ${esc(a.microchip||'—')}<br><b>Breed/species:</b> ${esc(a.breed||'—')}<br><b>Parentage DNA:</b> ${esc(a.dna||'—')}</div>
+<div><b>Sire origin:</b> ${esc(a.sireOrigin||'—')}<br><b>Sire:</b> ${esc(a.sire||'—')}<br><b>Dam:</b> ${esc(a.dam||'—')}</div>
+<div><b>Age category:</b> ${esc(a.ageCategory||'—')}<br><b>Age at auction:</b> ${esc(a.ageAuction||'—')}<br><b>DOB:</b> ${esc(a.dob||'—')}</div>
+<div><b>Area:</b> ${esc(a.area||'—')}<br><b>Date available:</b> ${esc(a.available||'—')}<br><b>Ear tag:</b> ${esc(a.tag||'—')}</div>
+</div>
+<h3 class="section-title">Auction / sales</h3><p><b>Auction:</b> ${esc(a.auction||'—')} &nbsp; <b>Price:</b> ${a.price?'R '+esc(a.price):'—'} &nbsp; <b>Status:</b> ${esc(a.status||'—')}</p>
+<h3 class="section-title">Additional info</h3><p>${esc(a.notes||'—')}</p></div>
+
+<div class="card"><h2>Measurements</h2>
+<form onsubmit="addMeasurement(event)">
+<div class="row3"><div><label>Date measured *</label><input id="mdate" type="date" required></div><div><label>Age measured</label><input id="mage" placeholder="e.g. 3y"></div><div><label>Weight / RW</label><input id="mrw" placeholder="e.g. 28 1/8"></div></div>
+<div class="row3"><div><label>Curve</label><input id="curve" placeholder="e.g. 55"></div><div><label>Inner tip-to-tip</label><input id="inner" placeholder="e.g. 17 4/8"></div><div><label>SCI</label><input id="sci" placeholder="e.g. 83"></div></div>
+<div class="row3"><div><label>Boss left</label><input id="bossL"></div><div><label>Boss right</label><input id="bossR"></div><div><label>Scrotum</label><input id="scrotum" placeholder="cm"></div></div>
+<div class="row3"><div><label>Horn length left</label><input id="hornL"></div><div><label>Horn length right</label><input id="hornR"></div><div><label>Horn spread</label><input id="spread"></div></div>
+<label>Other measurements / notes</label><input id="mnotes" placeholder="Add any species-specific measurements">
+<br><button>Save measurement</button></form>
+<div class="scroll" style="margin-top:15px"><table><thead><tr><th>Date</th><th>Age</th><th>RW</th><th>Curve</th><th>Tip-tip</th><th>Boss L/R</th><th>SCI</th><th>Scrotum</th><th>Other</th></tr></thead>
+<tbody>${a.measurements.map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(m.age)}</td><td>${esc(m.rw)}</td><td>${esc(m.curve)}</td><td>${esc(m.inner)}</td><td>${esc(m.bossL)} / ${esc(m.bossR)}</td><td>${esc(m.sci)}</td><td>${esc(m.scrotum)}</td><td>${esc(m.notes)}</td></tr>`).join('')}</tbody></table></div></div>
+
+<div class="card"><h2>Photos</h2><input type="file" accept="image/*" onchange="addPhoto(event)"><div class="grid">${(a.photos||[]).map(p=>`<img class="photo" src="${p}">`).join('')}</div></div>
+
+<div class="card"><h2>Animal management</h2><button class="red" onclick="deleteAnimal()">Delete ${esc(a.name)}</button></div>`}
+function toggleEditAnimal(force){const panel=$('editAnimalPanel');const open=force===undefined?panel.classList.contains('hidden'):force;panel.classList.toggle('hidden',!open);if(!open)return;const a=current;['name','type','tag','microchip','breed','lot','dna','sire','dam','sireOrigin','dob','ageCategory','ageAuction','area','available','auction','price','status','notes'].forEach(k=>{const el=$('e_'+k);if(el)el.value=a[k]||'';});}
+function saveAnimalDetails(e){e.preventDefault();['name','type','tag','microchip','breed','lot','dna','sire','dam','sireOrigin','dob','ageCategory','ageAuction','area','available','auction','price','status','notes'].forEach(k=>{current[k]=val('e_'+k)});save();toggleEditAnimal(false);renderProfile();}
+function exportBackup(){const payload={app:'Game Animal Records',version:1,exportedAt:new Date().toISOString(),animals};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='game-animal-records-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url);}
+function importBackup(e){const file=e.target.files&&e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);const incoming=Array.isArray(data)?data:data.animals;if(!Array.isArray(incoming))throw new Error('Backup does not contain an animal list');if(!confirm('Restore '+incoming.length+' animal records? This will replace the records currently shown on this device/farm.'))return;animals=incoming.map(a=>({...a,id:a.id??Date.now()+Math.random()}));save();updateStats();renderAnimals();alert('Backup restored.');}catch(err){alert('Could not restore backup: '+err.message)}finally{e.target.value=''}};reader.readAsText(file);}
+function addMeasurement(e){e.preventDefault();current.measurements.push({date:val('mdate'),age:val('mage'),rw:val('mrw'),curve:val('curve'),inner:val('inner'),bossL:val('bossL'),bossR:val('bossR'),sci:val('sci'),scrotum:val('scrotum'),hornL:val('hornL'),hornR:val('hornR'),spread:val('spread'),notes:val('mnotes')});save();renderProfile()}
+async function addPhoto(e){
+ let f=e.target.files[0];if(!f)return;
+ if(window.uploadAnimalPhoto){try{let url=await window.uploadAnimalPhoto(current.id,f);current.photos=current.photos||[];current.photos.push(url);save();renderProfile()}catch(err){alert('Photo upload failed: '+err.message)}}else{alert('Please sign in and connect to your farm workspace before uploading shared photos.')}
+}
+function deleteAnimal(){if(confirm('Delete '+current.name+'?')){let id=current.id;animals=animals.filter(a=>a.id!==id);save();if(window.deleteAnimalCloud)window.deleteAnimalCloud(id);show('animals')}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+updateStats();
+</script>
+
+<script>
+// IMPORTANT: Paste the Firebase web-app configuration from your own Firebase project here.
+const firebaseConfig = {
+  apiKey: "AIzaSyDW9YloLTtl3nQnj2KD1We0Gbq0At2Twso",
+  authDomain: "game-animal-breed-app.firebaseapp.com",
+  databaseURL: "https://game-animal-breed-app-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "game-animal-breed-app",
+  storageBucket: "game-animal-breed-app.firebasestorage.app",
+  messagingSenderId: "719854157820",
+  appId: "1:719854157820:web:a3be942fbd0522a586fc79",
+  measurementId: "G-B5TDEL3SRV"
+};
+
+window.cloudSyncReady = false;
+let authUser = null, activeFarmId = null, activeFarmNameValue = '', activeJoinCode = '';
+let unsubscribeAnimals = null;
+const authMsg = msg => { const el=document.getElementById('authMessage'); if(el)el.textContent=msg; };
+const cloudConfigured = () => firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PASTE_') && firebaseConfig.projectId && !firebaseConfig.projectId.startsWith('PASTE_');
+
+if (cloudConfigured()) {
+  firebase.initializeApp(firebaseConfig);
+  cons
