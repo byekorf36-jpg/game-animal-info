@@ -19,25 +19,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build web app
-        run: npm run build
-        continue-on-error: true
-
-      - name: Install Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
-
-      - name: Sync Android
-        run: npx cap sync android
+          cache: npm
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor and TypeScript
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android typescript
+
+      - name: Build web app
+        run: npm run build
+        continue-on-error: true
+
+      - name: Sync Android
+        run: npx cap sync android
 
       - name: Build Android APK
         run: |
